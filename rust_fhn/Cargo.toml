@@ -1,0 +1,12 @@
+[package]
+authors = ["Iuri Diniz <iuridiniz@gmail.com>"]
+edition = "2018"
+name = "fhn"
+version = "0.1.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+num_cpus = "1.13.0"
+reqwest = {version = "0.11.3", features = ["blocking", "json"]}
+serde = {version = "1.0.126", features = ["derive"]}
