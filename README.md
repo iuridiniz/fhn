@@ -10,7 +10,7 @@ What to do (plus):
  - minimal use of no standard libraries
  - crosscompile and run it in windows
  
-Challengers
+challenges:
 - How to spawn threads
 - How to discovery NPROC
 - How to sync threads
