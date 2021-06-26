@@ -1,0 +1,12 @@
+[submodule "zig_fhn/3rd/requestz"]
+	path = zig_fhn/3rd/requestz
+	url = git@github.com:ducdetronquito/requestz.git
+[submodule "zig_fhn/3rd/zig-network"]
+	path = zig_fhn/3rd/zig-network
+	url = git@github.com:MasterQ32/zig-network.git
+[submodule "zig_fhn/3rd/http"]
+	path = zig_fhn/3rd/http
+	url = git@github.com:ducdetronquito/http.git
+[submodule "zig_fhn/3rd/h11"]
+	path = zig_fhn/3rd/h11
+	url = git@github.com:ducdetronquito/h11.git
