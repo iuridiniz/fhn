@@ -38,8 +38,12 @@ const Shared = struct {
 };
 
 fn fetch_worker(sh: *Shared) void {
-    var allocator = sh.allocator;
-
+    // var allocator = sh.allocator;
+    const allocator = ok: {
+        var buffer: [200 * 1024]u8 = undefined;
+        var fba = std.heap.FixedBufferAllocator.init(&buffer);
+        break :ok &fba.allocator;
+    };
     while (true) {
         var i: u32 = undefined;
         {
@@ -60,12 +64,15 @@ fn fetch_worker(sh: *Shared) void {
             allocator,
             "{s}/{d}.json?print=pretty",
             .{ item_base_url, sh.ids[i] },
-        ) catch {
+        ) catch |err| {
+            print("error: {any}\n", .{err});
+
             continue;
         };
         defer allocator.free(raw_url);
 
-        const url = ziget.url.parseUrl(raw_url) catch {
+        const url = ziget.url.parseUrl(raw_url) catch |err| {
+            print("error: {any}\n", .{err});
             continue;
         };
         var downloadState = ziget.request.DownloadState.init();
@@ -83,7 +90,8 @@ fn fetch_worker(sh: *Shared) void {
         var text = std.ArrayList(u8).init(allocator);
         defer text.deinit();
 
-        ziget.request.download(url, text.writer(), options, &downloadState) catch {
+        ziget.request.download(url, text.writer(), options, &downloadState) catch |err| {
+            print("error: {any}\n", .{err});
             continue;
         };
 
@@ -92,18 +100,15 @@ fn fetch_worker(sh: *Shared) void {
         var fetched_story = std.json.parse(Story, &stream, .{
             .allocator = allocator,
             .ignore_unknown_fields = true,
-        }) catch {
+        }) catch |err| {
+            print("error: {any}\n", .{err});
             continue;
         };
         defer {
-            std.json.parseFree(
-                Story,
-                fetched_story,
-                .{
-                    .allocator = allocator,
-                    .ignore_unknown_fields = true,
-                },
-            );
+            std.json.parseFree(Story, fetched_story, .{
+                .allocator = allocator,
+                .ignore_unknown_fields = true,
+            });
         }
 
         story.title = fetched_story.title;
@@ -137,18 +142,18 @@ pub fn main() anyerror!void {
     // defer arena.deinit();
     // const allocator = &arena.allocator;
 
-    const allocator = std.heap.c_allocator;
+    // const allocator = std.heap.c_allocator;
     // const allocator = ok: {
     //     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     //     defer std.debug.assert(!gpa.deinit());
     //     break :ok &gpa.allocator;
     // };
 
-    // const allocator = ok: {
-    //     var buffer: [25 * 1024]u8 = undefined;
-    //     var fba = std.heap.FixedBufferAllocator.init(&buffer);
-    //     break :ok &fba.allocator;
-    // };
+    const allocator = ok: {
+        var buffer: [25 * 1024]u8 = undefined;
+        var fba = std.heap.FixedBufferAllocator.init(&buffer);
+        break :ok &fba.allocator;
+    };
 
     var limit: usize = stories_limit;
     var num_threads: usize = 10;
@@ -191,11 +196,9 @@ pub fn main() anyerror!void {
     defer text.deinit();
 
     try ziget.request.download(url, text.writer(), options, &downloadState);
-    // print("{s}\n{s}\n", .{ text.items, url.Http.str });
 
     // Parse json
     var stream = std.json.TokenStream.init(text.items);
-    // print("{}\n", .{stream});
     const ids = try std.json.parse([]u32, &stream, .{ .allocator = allocator });
     defer std.json.parseFree([]u32, ids, .{
         .allocator = allocator,
@@ -223,12 +226,11 @@ pub fn main() anyerror!void {
     {
         var i: usize = 0;
         while (i < num_threads) : (i += 1) {
-            // print("{any}\n", .{ids[i]});
             var thread: *std.Thread = try std.Thread.spawn(fetch_worker, sh);
             try threads.append(thread);
         }
     }
-    // wait for threads
+    // wait for threads done
     {
         var i: usize = 0;
         while (i < num_threads) : (i += 1) {

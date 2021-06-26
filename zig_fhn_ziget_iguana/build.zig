@@ -35,7 +35,7 @@ pub fn build(b: *std.build.Builder) void {
 
     const exe = b.addExecutable("fhn", "src/main.zig");
     exe.setTarget(target);
-    exe.linkSystemLibrary("c");
+    // exe.linkSystemLibrary("c");
     exe.setBuildMode(mode);
     exe.addPackage(ziget);
     exe.install();
