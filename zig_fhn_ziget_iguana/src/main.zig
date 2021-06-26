@@ -132,29 +132,7 @@ fn fetch_worker(sh: *Shared) void {
 }
 
 pub fn main() anyerror!void {
-    // var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    // var arena = std.heap.ArenaAllocator.init(std.heap.c_allocator);
-    // var arena = std.heap.ArenaAllocator.init(ok: {
-    //     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    //     defer std.debug.assert(!gpa.deinit());
-    //     break :ok &gpa.allocator;
-    // });
-    // defer arena.deinit();
-    // const allocator = &arena.allocator;
-
     const allocator = std.heap.page_allocator;
-    // const allocator = std.heap.c_allocator;
-    // const allocator = ok: {
-    //     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    //     defer std.debug.assert(!gpa.deinit());
-    //     break :ok &gpa.allocator;
-    // };
-
-    // const allocator = ok: {
-    //     var buffer: [25 * 1024]u8 = undefined;
-    //     var fba = std.heap.FixedBufferAllocator.init(&buffer);
-    //     break :ok &fba.allocator;
-    // };
 
     var limit: usize = stories_limit;
     var num_threads: usize = 10;
