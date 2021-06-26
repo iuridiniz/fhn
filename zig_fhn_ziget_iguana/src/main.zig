@@ -19,7 +19,11 @@ const Story = struct {
     fetched: bool = false,
 };
 
+var stdout_lock = std.Thread.Mutex.AtomicMutex{};
+
 fn print(comptime fmt: []const u8, args: anytype) void {
+    var hold = stdout_lock.acquire();
+    defer hold.release();
     const stdout = std.io.getStdOut().writer();
     stdout.print(fmt, args) catch unreachable;
 }
@@ -30,14 +34,11 @@ const Shared = struct {
     ids: []const u32,
     cursor_ids: u32,
     lock: std.Thread.Mutex.AtomicMutex,
-    stories: std.ArrayList(Story),
-    cursor_stories: u32,
     allocator: *std.mem.Allocator,
 };
 
 fn fetch_worker(sh: *Shared) void {
-    // print("Thread {} start\n", .{thread_id});
-    // print("Thread {} end\n", .{thread_id});
+    var allocator = sh.allocator;
 
     while (true) {
         var i: u32 = undefined;
@@ -55,22 +56,14 @@ fn fetch_worker(sh: *Shared) void {
             .id = sh.ids[i],
         };
 
-        // push result back to main thread
-        defer {
-            var lock = sh.lock.acquire();
-            defer lock.release();
-            sh.stories.append(story) catch unreachable;
-            sh.cursor_stories += 1;
-        }
-
         const raw_url = std.fmt.allocPrint(
-            sh.allocator,
+            allocator,
             "{s}/{d}.json?print=pretty",
             .{ item_base_url, sh.ids[i] },
         ) catch {
             continue;
         };
-        defer sh.allocator.free(raw_url);
+        defer allocator.free(raw_url);
 
         const url = ziget.url.parseUrl(raw_url) catch {
             continue;
@@ -79,7 +72,7 @@ fn fetch_worker(sh: *Shared) void {
 
         const options = ziget.request.DownloadOptions{
             .flags = 0,
-            .allocator = sh.allocator,
+            .allocator = allocator,
             .maxRedirects = 0,
             .forwardBufferSize = 8192,
             .maxHttpResponseHeaders = 8192,
@@ -87,40 +80,49 @@ fn fetch_worker(sh: *Shared) void {
             .onHttpResponse = no_op,
         };
 
-        var text = std.ArrayList(u8).init(sh.allocator);
+        var text = std.ArrayList(u8).init(allocator);
         defer text.deinit();
 
         ziget.request.download(url, text.writer(), options, &downloadState) catch {
             continue;
         };
 
-        // print("{s}\n{s}\n ", .{ text.items, url.Http.str });
         // Parse json
         var stream = std.json.TokenStream.init(text.items);
         var fetched_story = std.json.parse(Story, &stream, .{
-            .allocator = sh.allocator,
+            .allocator = allocator,
             .ignore_unknown_fields = true,
         }) catch {
             continue;
         };
-        // move pointers, remember do free them
+        defer {
+            std.json.parseFree(
+                Story,
+                fetched_story,
+                .{
+                    .allocator = allocator,
+                    .ignore_unknown_fields = true,
+                },
+            );
+        }
+
         story.title = fetched_story.title;
         story.url = fetched_story.url;
         story.fetched = true;
 
-        // print("{any}\n", .{story});
-
-        // avoid this free, FREE it from main thread
-        // defer {
-        //     std.json.parseFree(
-        //         Story,
-        //         fetched_story,
-        //         .{
-        //             .allocator = sh.allocator,
-        //             .ignore_unknown_fields = true,
-        //         },
-        //     );
-        // }
+        print(
+            \\ [{d}/{d}] id: {d}
+            \\         title: {s}
+            \\         url: {s}
+            \\
+            \\
+        , .{
+            story.number,
+            sh.ids.len,
+            story.id,
+            story.title,
+            story.url,
+        });
     }
 }
 
@@ -212,16 +214,10 @@ pub fn main() anyerror!void {
     defer threads.deinit();
     try threads.ensureCapacity(num_threads);
 
-    var stories = std.ArrayList(Story).init(allocator);
-    defer stories.deinit();
-    try stories.ensureCapacity(limit);
-
     var sh = &Shared{
         .lock = std.Thread.Mutex.AtomicMutex{},
         .ids = ids[0..limit],
         .cursor_ids = 0,
-        .stories = stories,
-        .cursor_stories = 0,
         .allocator = allocator,
     };
     {
@@ -230,60 +226,6 @@ pub fn main() anyerror!void {
             // print("{any}\n", .{ids[i]});
             var thread: *std.Thread = try std.Thread.spawn(fetch_worker, sh);
             try threads.append(thread);
-        }
-    }
-
-    // Print from main thread
-    {
-        var i: usize = 0;
-
-        while (true) {
-            if (i >= sh.ids.len) {
-                break;
-            }
-
-            var stories_done = lock: {
-                var hold = sh.lock.acquire();
-                defer hold.release();
-                var cursor = sh.cursor_stories;
-                break :lock cursor;
-            };
-
-            var story: Story = undefined;
-
-            if (i < stories_done) {
-                var hold = sh.lock.acquire();
-                defer hold.release();
-                story = sh.stories.items[i];
-            } else {
-                std.time.sleep(100_000);
-                continue;
-            }
-
-            print(
-                \\ [{d}/{d}] id: {d}
-                \\         title: {s}
-                \\         url: {s}
-                \\
-                \\
-            , .{
-                story.number,
-                sh.ids.len,
-                story.id,
-                story.title,
-                story.url,
-            });
-            // free item
-            if (story.fetched) {
-                std.json.parseFree(Story, story, .{
-                    .allocator = sh.allocator,
-                    .ignore_unknown_fields = true,
-                });
-            } else {
-                print("------{}--------\n", .{story.number});
-            }
-
-            i += 1;
         }
     }
     // wait for threads
