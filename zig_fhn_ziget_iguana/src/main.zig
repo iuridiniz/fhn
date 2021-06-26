@@ -38,12 +38,12 @@ const Shared = struct {
 };
 
 fn fetch_worker(sh: *Shared) void {
-    // var allocator = sh.allocator;
-    const allocator = ok: {
-        var buffer: [200 * 1024]u8 = undefined;
-        var fba = std.heap.FixedBufferAllocator.init(&buffer);
-        break :ok &fba.allocator;
-    };
+    var allocator = sh.allocator;
+    // const allocator = ok: {
+    //     var buffer: [200 * 1024]u8 = undefined;
+    //     var fba = std.heap.FixedBufferAllocator.init(&buffer);
+    //     break :ok &fba.allocator;
+    // };
     while (true) {
         var i: u32 = undefined;
         {
@@ -142,6 +142,7 @@ pub fn main() anyerror!void {
     // defer arena.deinit();
     // const allocator = &arena.allocator;
 
+    const allocator = std.heap.page_allocator;
     // const allocator = std.heap.c_allocator;
     // const allocator = ok: {
     //     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -149,11 +150,11 @@ pub fn main() anyerror!void {
     //     break :ok &gpa.allocator;
     // };
 
-    const allocator = ok: {
-        var buffer: [25 * 1024]u8 = undefined;
-        var fba = std.heap.FixedBufferAllocator.init(&buffer);
-        break :ok &fba.allocator;
-    };
+    // const allocator = ok: {
+    //     var buffer: [25 * 1024]u8 = undefined;
+    //     var fba = std.heap.FixedBufferAllocator.init(&buffer);
+    //     break :ok &fba.allocator;
+    // };
 
     var limit: usize = stories_limit;
     var num_threads: usize = 10;
