@@ -10,3 +10,9 @@
 [submodule "zig_fhn/3rd/h11"]
 	path = zig_fhn/3rd/h11
 	url = git@github.com:ducdetronquito/h11.git
+[submodule "zig_fhn_ziget_iguana/3rd/ziget"]
+	path = zig_fhn_ziget_iguana/3rd/ziget
+	url = git@github.com:marler8997/ziget.git
+[submodule "zig_fhn_ziget_iguana/3rd/iguanaTLS"]
+	path = zig_fhn_ziget_iguana/3rd/iguanaTLS
+	url = git@github.com:alexnask/iguanaTLS.git
