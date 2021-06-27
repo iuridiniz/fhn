@@ -1,11 +1,16 @@
 .PHONY: all clean fmt
 
-BINARY=fhn
+BINARY = fhn
+
+ifeq ($(OS),Windows)
+	ZIGFLAGS += -Dtarget=x86_64-windows-gnu
+	BINARY = fhn.exe
+endif
 
 all: $(BINARY)
 
-fhn: $(wildcard src/*.zig) build.zig
-	zig build
+$(BINARY): $(wildcard src/*.zig) build.zig
+	zig build $(ZIGFLAGS)
 	cp zig-out/bin/$@ $@
 
 fmt: $(wildcard src/*.zig) build.zig
