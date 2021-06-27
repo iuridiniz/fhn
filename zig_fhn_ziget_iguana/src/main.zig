@@ -39,11 +39,6 @@ const Shared = struct {
 
 fn fetch_worker(sh: *Shared) void {
     var allocator = sh.allocator;
-    // const allocator = ok: {
-    //     var buffer: [200 * 1024]u8 = undefined;
-    //     var fba = std.heap.FixedBufferAllocator.init(&buffer);
-    //     break :ok &fba.allocator;
-    // };
     while (true) {
         var i: u32 = undefined;
         {
@@ -133,6 +128,7 @@ fn fetch_worker(sh: *Shared) void {
 
 pub fn main() anyerror!void {
     const allocator = std.heap.page_allocator;
+    // const allocator = std.heap.c_allocator;
 
     var limit: usize = stories_limit;
     var num_threads: usize = 10;
