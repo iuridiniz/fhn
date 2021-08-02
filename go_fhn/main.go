@@ -56,13 +56,13 @@ func goStoryThread(sh *Shared, threadId int) {
 
 	for {
 		var id int
-		var number int
-		{
+		number := func() int {
 			sh.mutex.Lock()
-			number = sh.Cursor
+			defer sh.mutex.Unlock()
+			number := sh.Cursor
 			sh.Cursor++
-			sh.mutex.Unlock()
-		}
+			return number
+		}()
 
 		if number >= len(sh.Ids) {
 			break
