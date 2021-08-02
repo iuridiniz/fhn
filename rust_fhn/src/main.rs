@@ -41,6 +41,16 @@ fn do_fetch(tx: std::sync::mpsc::Sender<Option<Story>>, sh: std::sync::Arc<Share
     }
 }
 
+fn print_story(story: Story, max: usize) {
+    let header = format!("[{}/{}]", story.number.unwrap(), max);
+    let indent = " ".repeat(header.len());
+
+    println!("{} id: {}", header, story.id.unwrap_or_default());
+    println!("{} title: {}", indent, story.title.unwrap_or_default());
+    println!("{} url: {}", indent, story.url.unwrap_or_default());
+    print!("\n");
+}
+
 fn nr_jobs() -> usize {
     match std::env::var("JOBS")
         .unwrap_or("0".to_string())
@@ -104,13 +114,7 @@ fn main() {
     }
     for _ in 1..=sh.ids.len() {
         if let Some(st) = rx.recv().unwrap() {
-            let header = format!("[{}/{}]", st.number.unwrap(), sh.ids.len());
-            let indent = " ".repeat(header.len());
-
-            println!("{} id: {}", header, st.id.unwrap_or_default());
-            println!("{} title: {}", indent, st.title.unwrap_or_default());
-            println!("{} url: {}", indent, st.url.unwrap_or_default());
-            print!("\n");
+            print_story(st, sh.ids.len());
         }
     }
     children.into_iter().for_each(|child| child.join().unwrap());
