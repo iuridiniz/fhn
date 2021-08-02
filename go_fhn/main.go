@@ -136,8 +136,8 @@ func main() {
 		wg.Add(1)
 		threadId := i
 		go func() {
+			defer wg.Done()
 			goStoryThread(&sh, threadId)
-			wg.Done()
 		}()
 	}
 	wg.Wait()
