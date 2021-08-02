@@ -1,4 +1,4 @@
-DIRS = vlang_fhn rust_fhn zig_fhn
+DIRS = vlang_fhn rust_fhn zig_fhn go_fhn
 
 .PHONY: all clean
 
