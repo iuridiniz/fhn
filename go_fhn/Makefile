@@ -10,5 +10,8 @@ fhn: $(wildcard *.go) go.mod
 fhn.static: $(wildcard *.go) go.mod
 	CGO_ENABLED=0 go build -a -ldflags '-extldflags "-static" -s -w' -o $@
 
+fhn.exe: $(wildcard *.go) go.mod
+	GOOS=windows go build -a -o $@
+
 clean:
 	rm -f $(BINARY)
