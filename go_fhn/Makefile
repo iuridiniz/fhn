@@ -14,4 +14,4 @@ fhn.exe: $(wildcard *.go) go.mod
 	GOOS=windows go build -a -o $@
 
 clean:
-	rm -f $(BINARY)
+	rm -f fhn fhn.exe fhn.static
